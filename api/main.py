@@ -1,23 +1,35 @@
-from fastapi import FastAPI, File, UploadFile
-from fastapi.responses import JSONResponse
-from PIL import Image
-import io
+from fastapi import FastAPI, UploadFile, File
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
+import os
+import uuid
+from stable_diffusion import generate_ghibli_image
 
 app = FastAPI()
 
+# Allow frontend requests
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 @app.get("/")
 def read_root():
-    return {"message": "Ghibli backend is working!"}
+    return {"message": "ghibli backend is working!"}
 
-@app.post("/ghibli-style/")
-async def ghibli_style(file: UploadFile = File(...)):
-    image_bytes = await file.read()
-    image = Image.open(io.BytesIO(image_bytes)).convert("RGB")
+@app.post("/transform")
+async def transform_image(file: UploadFile = File(...)):
+    os.makedirs("temp", exist_ok=True)
 
-    # Dummy image-to-image step (replace with real model)
-    output_image = image.transpose(Image.FLIP_LEFT_RIGHT)
+    file_ext = os.path.splitext(file.filename)[-1]
+    input_path = f"temp/input_{uuid.uuid4()}{file_ext}"
 
-    # Save output for demonstration
-    output_image.save("output.jpg")
+    with open(input_path, "wb") as f:
+        f.write(await file.read())
 
-    return JSONResponse(content={"status": "success", "detail": "Image processed and saved as output.jpg"})
+    # Call Stable Diffusion function
+    output_path = generate_ghibli_image(input_path)
+
+    return FileResponse(output_path, media_type="image/png", filename="ghibli_output.png")
