@@ -1,4 +1,9 @@
 fastapi
 uvicorn
-pillow
 python-multipart
+pillow
+torch
+transformers
+diffusers
+accelerate
+safetensors
