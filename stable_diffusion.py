@@ -1,21 +1,14 @@
+from diffusers import StableDiffusionPipeline
 import torch
-from diffusers import StableDiffusionImg2ImgPipeline
-from PIL import Image
-from prompt_generator import generate_prompt
 
-def generate_ghibli_image(image_path: str) -> str:
-    device = "cuda" if torch.cuda.is_available() else "cpu"
-    pipe = StableDiffusionImg2ImgPipeline.from_pretrained(
-        "runwayml/stable-diffusion-v1-5",
-        torch_dtype=torch.float16 if device == "cuda" else torch.float32
-    ).to(device)
+def generate_ghibli_image(input_path):
+    pipe = StableDiffusionPipeline.from_pretrained(
+        "CompVis/stable-diffusion-v1-4", 
+        torch_dtype=torch.float32
+    )
+    pipe = pipe.to("cpu")
 
-    init_image = Image.open(image_path).convert("RGB").resize((512, 512))
-    prompt = generate_prompt(image_path) + ", ghibli style, animation look"
-
-    output = pipe(prompt=prompt, image=init_image, strength=0.75, guidance_scale=7.5)
-    result = output.images[0]
-
-    output_path = f"temp/ghibli_output.png"
-    result.save(output_path)
+    image = pipe(prompt="ghibli style", image=input_path).images[0]
+    output_path = "temp/ghibli_output.png"
+    image.save(output_path)
     return output_path
